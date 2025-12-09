@@ -1,10 +1,276 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>简单网页</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ciallo～(∠・ω< )⌒☆ 烟花</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        #instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+            text-align: center;
+            font-size: 1.2rem;
+            transition: opacity 0.5s;
+        }
+    </style>
 </head>
 <body>
-    这是一个简单的网页。
+
+    <div id="instructions">点击屏幕发射 Ciallo～</div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // 使用立即执行函数 (IIFE) 包裹代码，防止全局变量污染和重复声明错误
+        (function() {
+            // 获取 Canvas 和上下文
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const instructions = document.getElementById('instructions');
+
+            let w, h;
+            let fireworks = [];
+            let particles = [];
+            
+            // Ciallo 文本
+            const targetText = "Ciallo～(∠・ω< )⌒☆";
+
+            // 初始化画布尺寸
+            function resize() {
+                w = canvas.width = window.innerWidth;
+                h = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // 随机数辅助函数
+            function random(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            // 烟花升空阶段 (Firework 类)
+            class Firework {
+                constructor(sx, sy, tx, ty) {
+                    this.x = sx;
+                    this.y = sy;
+                    this.sx = sx;
+                    this.sy = sy;
+                    this.tx = tx;
+                    this.ty = ty;
+                    
+                    // 计算距离和角度
+                    this.distanceToTarget = Math.sqrt(Math.pow(tx - sx, 2) + Math.pow(ty - sy, 2));
+                    this.distanceTraveled = 0;
+                    this.coordinates = [];
+                    this.coordinateCount = 3;
+                    
+                    // 填充初始坐标轨迹
+                    while(this.coordinateCount--) {
+                        this.coordinates.push([this.x, this.y]);
+                    }
+                    
+                    this.angle = Math.atan2(ty - sy, tx - sx);
+                    this.speed = 2;
+                    this.acceleration = 1.05;
+                    this.brightness = random(50, 70);
+                    // 随机一种基色调，爆炸时会用到
+                    this.hue = random(0, 360); 
+                }
+
+                update(index) {
+                    // 移除轨迹中最后一个坐标
+                    this.coordinates.pop();
+                    // 在轨迹开头添加当前坐标
+                    this.coordinates.unshift([this.x, this.y]);
+
+                    // 加速
+                    if (this.speed < 8) { 
+                        this.speed *= this.acceleration;    
+                    }
+                    
+                    // 计算速度分量
+                    const vx = Math.cos(this.angle) * this.speed;
+                    const vy = Math.sin(this.angle) * this.speed;
+                    
+                    // 更新距离
+                    this.distanceTraveled = Math.sqrt(Math.pow(this.distanceTraveled + vx, 2) + Math.pow(this.distanceTraveled + vy, 2)); 
+                    // 实际更新位置
+                    this.x += vx;
+                    this.y += vy;
+                    
+                    // 简单的到达判断
+                    const distanceRemaining = Math.sqrt(Math.pow(this.tx - this.x, 2) + Math.pow(this.ty - this.y, 2));
+
+                    // 如果接近目标，爆炸
+                    if (distanceRemaining < this.distanceToTarget * 0.05 || this.speed > this.distanceToTarget) { 
+                        createParticles(this.tx, this.ty, this.hue);
+                        fireworks.splice(index, 1);
+                    }
+                }
+
+                draw() {
+                    ctx.beginPath();
+                    // 绘制轨迹
+                    ctx.moveTo(this.coordinates[this.coordinates.length - 1][0], this.coordinates[this.coordinates.length - 1][1]);
+                    ctx.lineTo(this.x, this.y);
+                    ctx.strokeStyle = `hsl(${this.hue}, 100%, ${this.brightness}%)`;
+                    ctx.stroke();
+                }
+            }
+
+            // 爆炸粒子阶段 (Particle 类 - 显示文字)
+            class Particle {
+                constructor(x, y, hue) {
+                    this.x = x;
+                    this.y = y;
+                    this.coordinates = [];
+                    this.coordinateCount = 5;
+                    while(this.coordinateCount--) {
+                        this.coordinates.push([this.x, this.y]);
+                    }
+                    
+                    // 随机向各个方向发散
+                    this.angle = random(0, Math.PI * 2);
+                    this.speed = random(1, 12); 
+                    this.friction = 0.95; 
+                    this.gravity = 1;     
+                    
+                    // 颜色和外观
+                    this.hue = random(hue - 50, hue + 50);
+                    this.brightness = random(50, 80);
+                    this.alpha = 1;
+                    this.decay = random(0.01, 0.02); 
+                    
+                    // 文字大小随机
+                    this.fontSize = random(12, 24);
+                    // 稍微旋转一点文字
+                    this.rotation = random(-0.2, 0.2);
+                }
+
+                update(index) {
+                    // 减速
+                    this.speed *= this.friction;
+                    
+                    // 更新位置
+                    this.x += Math.cos(this.angle) * this.speed;
+                    this.y += Math.sin(this.angle) * this.speed + this.gravity;
+                    
+                    // 渐变消失
+                    this.alpha -= this.decay;
+
+                    if (this.alpha <= this.decay) {
+                        particles.splice(index, 1);
+                    }
+                }
+
+                draw() {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.rotation);
+                    
+                    // 设置文字样式
+                    ctx.font = `bold ${this.fontSize}px Arial, sans-serif`;
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    
+                    // 文字颜色
+                    ctx.fillStyle = `hsla(${this.hue}, 100%, ${this.brightness}%, ${this.alpha})`;
+                    
+                    // 绘制文字
+                    ctx.fillText(targetText, 0, 0);
+                    
+                    // 发光效果
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = `hsla(${this.hue}, 100%, 50%, ${this.alpha})`;
+                    
+                    ctx.restore();
+                }
+            }
+
+            // 创建爆炸效果
+            function createParticles(x, y, hue) {
+                const particleCount = 20; 
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push(new Particle(x, y, hue));
+                }
+            }
+
+            // 动画主循环
+            function loop() {
+                requestAnimationFrame(loop);
+
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.globalCompositeOperation = 'lighter';
+
+                let i = fireworks.length;
+                while(i--) {
+                    fireworks[i].draw();
+                    fireworks[i].update(i);
+                }
+
+                let j = particles.length;
+                while(j--) {
+                    particles[j].draw();
+                    particles[j].update(j);
+                }
+
+                if (timerTick >= timerTotal) {
+                    if (!mousedown) {
+                        fireworks.push(new Firework(w / 2, h, random(0, w), random(0, h / 2)));
+                        timerTick = 0;
+                    }
+                } else {
+                    timerTick++;
+                }
+                
+                if (particles.length > 500) {
+                    particles.splice(0, particles.length - 500);
+                }
+            }
+
+            // 计时器变量
+            let timerTotal = 60; 
+            let timerTick = 0;
+            let mousedown = false;
+
+            // 鼠标/触摸交互
+            canvas.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                mousedown = true;
+                instructions.style.opacity = '0'; 
+                fireworks.push(new Firework(w / 2, h, e.clientX, e.clientY));
+            });
+
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                mousedown = true;
+                instructions.style.opacity = '0';
+                for (let i = 0; i < e.touches.length; i++) {
+                    fireworks.push(new Firework(w / 2, h, e.touches[i].clientX, e.touches[i].clientY));
+                }
+            }, {passive: false});
+
+            canvas.addEventListener('mouseup', () => mousedown = false);
+            canvas.addEventListener('touchend', () => mousedown = false);
+
+            // 启动循环
+            loop();
+        })(); 
+    </script>
 </body>
 </html>

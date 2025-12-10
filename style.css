@@ -9,9 +9,7 @@ html, body {
     font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
 }
 
-/* -------------------
-   主页
--------------------- */
+/* 首页背景 */
 #home-screen {
     position: absolute;
     inset: 0;
@@ -25,7 +23,7 @@ html, body {
 }
 
 .title {
-    font-size: clamp(2rem, 6vw, 3.5rem); /* 手机变小 · PC变大 */
+    font-size: clamp(2rem, 6vw, 3.5rem);
     font-weight: bold;
     color: white;
     margin-bottom: 0.8rem;
@@ -41,7 +39,7 @@ html, body {
     margin-bottom: 2.5rem;
 }
 
-/* 按钮：自动增大触摸区域 */
+/* 按钮（支持手机） */
 .touch-btn {
     padding: 15px 40px;
     font-size: clamp(1.2rem, 4vw, 1.6rem);
@@ -58,7 +56,6 @@ html, body {
     transform: scale(0.95);
 }
 
-/* 小按钮 (返回主页用) */
 .small-btn {
     font-size: clamp(0.8rem, 3vw, 1rem);
     padding: 8px 14px;
@@ -95,7 +92,7 @@ canvas {
     display: none !important;
 }
 
-/* 漂浮动画 */
+/* 浮动动画 */
 @keyframes float {
     0% { transform: translateY(0px); }
     50% { transform: translateY(-15px); }

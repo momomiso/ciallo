@@ -2,19 +2,18 @@
 
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-
     const homeScreen = document.getElementById("home-screen");
     const gameScreen = document.getElementById("game-screen");
     const instructions = document.getElementById("instructions");
 
     let fireworks = [];
     let particles = [];
-    let gameActive = false;
     let animationFrameId = null;
+    let gameActive = false;
 
     const targetText = "Ciallo～(∠・ω< )⌒☆";
 
-    /* 🔥 性能限制参数 */
+    /* 性能优化参数 */
     const MAX_PARTICLES = 180;
     const MAX_FIREWORKS = 3;
     const PARTICLES_PER_FIREWORK = 12;
@@ -23,6 +22,7 @@
     let lastClick = 0;
     let w, h;
 
+    /* ---------- Canvas 适配 ---------- */
     function resizeCanvas() {
         const dpr = window.devicePixelRatio || 1;
         canvas.width = canvas.clientWidth * dpr;
@@ -38,13 +38,14 @@
         return Math.random() * (max - min) + min;
     }
 
-    /* ---------------- FIREWORK ---------------- */
+    /* ---------- Firework ---------- */
     class Firework {
         constructor(sx, sy, tx, ty) {
             this.x = sx;
             this.y = sy;
             this.tx = tx;
             this.ty = ty;
+
             this.angle = Math.atan2(ty - sy, tx - sx);
             this.speed = 2;
             this.acc = 1.03;
@@ -72,7 +73,7 @@
         }
     }
 
-    /* ---------------- PARTICLE ---------------- */
+    /* ---------- 粒子 ---------- */
     class Particle {
         constructor(x, y, hue) {
             this.x = x;
@@ -90,6 +91,7 @@
 
         update(i) {
             this.speed *= this.friction;
+
             this.x += Math.cos(this.angle) * this.speed;
             this.y += Math.sin(this.angle) * this.speed + this.gravity;
 
@@ -111,7 +113,7 @@
         }
     }
 
-    /* ---------------- LOOP ---------------- */
+    /* ---------- 主循环 ---------- */
     function loop() {
         if (!gameActive) return;
 
@@ -128,7 +130,7 @@
         }
     }
 
-    /* ---------------- 控制点击冷却 ---------------- */
+    /* ---------- 点击触发烟花 ---------- */
     function spawnFirework(x, y) {
         const now = Date.now();
         if (now - lastClick < CLICK_COOLDOWN) return;
@@ -144,11 +146,11 @@
     canvas.addEventListener("mousedown", e => spawnFirework(e.offsetX, e.offsetY));
     canvas.addEventListener("touchstart", e => {
         e.preventDefault();
-        const t = e.touches[0];
+        let t = e.touches[0];
         spawnFirework(t.clientX, t.clientY);
     }, { passive: false });
 
-    /* ---------------- 游戏启动 ---------------- */
+    /* ---------- 游戏启动函数 ---------- */
     window.startFireworkGame = function () {
         resizeCanvas();
         ctx.font = "bold 20px Arial";
@@ -160,6 +162,37 @@
         gameActive = true;
 
         loop();
+    };
+
+    /* ---------- 页面切换 ---------- */
+    document.getElementById("start-btn").onclick = () => {
+        homeScreen.style.opacity = "0";
+        setTimeout(() => homeScreen.classList.add("hidden"), 800);
+
+        gameScreen.classList.remove("hidden");
+        void gameScreen.offsetWidth;
+        gameScreen.style.opacity = "1";
+        gameScreen.style.pointerEvents = "auto";
+
+        startFireworkGame();
+    };
+
+    document.getElementById("back-btn").onclick = () => {
+        gameActive = false;
+        cancelAnimationFrame(animationFrameId);
+
+        gameScreen.style.opacity = "0";
+        gameScreen.style.pointerEvents = "none";
+
+        homeScreen.classList.remove("hidden");
+        void homeScreen.offsetWidth;
+        homeScreen.style.opacity = "1";
+
+        setTimeout(() => {
+            gameScreen.classList.add("hidden");
+            fireworks = [];
+            particles = [];
+        }, 1000);
     };
 
 })();

@@ -2,32 +2,483 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ciallo～(∠・ω< )⌒☆ </title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050210;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
 
-    <title>Ciallo～(∠・ω< )⌒☆ 烟花祭</title>
+        /* 动态背景层 */
+        #bg-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
+            z-index: 1;
+        }
 
-    <!-- 加载外部 CSS -->
-    <link rel="stylesheet" href="ciallo/style.css">
+        /* 星空层 */
+        #stars {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.3) 1px, transparent 2px),
+                radial-gradient(white, rgba(255,255,255,.1) 1px, transparent 1px);
+            background-size: 50px 50px, 100px 100px;
+            background-position: 0 0, 25px 25px;
+            opacity: 0.8;
+            z-index: 2;
+            animation: twinkle 5s infinite alternate;
+        }
+        
+        @keyframes twinkle {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* 画布层 */
+        canvas {
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 5;
+            display: block;
+            touch-action: none; 
+        }
+
+        /* UI 层 */
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10;
+            pointer-events: none; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 连击计数器 */
+        #combo-container {
+            position: absolute;
+            top: 15%;
+            right: 5%;
+            text-align: right;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: transform 0.1s;
+        }
+        
+        #combo-container.active {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        .combo-count {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 2px 2px 0px #ff00de, -1px -1px 10px rgba(255,255,255,0.5);
+            font-family: Arial, sans-serif;
+        }
+
+        .combo-label {
+            font-size: 1rem;
+            color: #00dbde;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        /* 主页 */
+        #home-screen {
+            text-align: center;
+            pointer-events: auto; 
+            transition: opacity 0.5s;
+            background: rgba(0,0,0,0.4);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        .title {
+            font-size: 3rem;
+            color: #fff;
+            font-weight: 800;
+            text-shadow: 0 0 15px #ff00de;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+        }
+
+        #start-btn {
+            background: linear-gradient(90deg, #ff00de, #00dbde);
+            border: none;
+            padding: 12px 40px;
+            font-size: 1.3rem;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 0, 222, 0.4);
+            transition: transform 0.1s;
+            font-weight: bold;
+        }
+
+        #start-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 底部操作栏 */
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            display: flex;
+            gap: 15px;
+            opacity: 0;
+            pointer-events: auto;
+            transition: opacity 0.5s;
+        }
+
+        .ctrl-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .hidden { display: none !important; }
+    </style>
 </head>
-
 <body>
 
-    <!-- 主页 -->
-    <div id="home-screen">
-        <div class="title">Ciallo～(∠・ω< )⌒☆</div>
-        <div class="subtitle">与你相遇的奇迹</div>
-        <button id="start-btn" class="touch-btn">点燃烟花</button>
+    <div id="bg-layer"></div>
+    <div id="stars"></div>
+
+    <div id="ui-layer">
+        <div id="combo-container">
+            <div class="combo-count" id="combo-num">0</div>
+            <div class="combo-label">COMBO!</div>
+        </div>
+
+        <div id="home-screen">
+            <div class="title">Ciallo～(∠・ω< )⌒☆</div>
+            <button id="start-btn">Ciallo～</button>
+        </div>
+
+        <div id="controls">
+            <button class="ctrl-btn" id="clear-btn">清空</button>
+            <button class="ctrl-btn" id="exit-btn">退出</button>
+        </div>
     </div>
 
-    <!-- 游戏界面 -->
-    <div id="game-screen" class="hidden">
-        <button id="back-btn" class="touch-btn small-btn">返回主页</button>
-        <div id="instructions">点击屏幕发射 Ciallo～</div>
-        <canvas id="canvas"></canvas>
-    </div>
+    <canvas id="canvas"></canvas>
 
-    <!-- 加载外部 JS -->
-    <script src="ciallo/main.js"></script>
+    <script>
+        (function() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const homeScreen = document.getElementById('home-screen');
+            const startBtn = document.getElementById('start-btn');
+            const controls = document.getElementById('controls');
+            const clearBtn = document.getElementById('clear-btn');
+            const exitBtn = document.getElementById('exit-btn');
+            const comboContainer = document.getElementById('combo-container');
+            const comboNum = document.getElementById('combo-num');
+
+            let w, h;
+            let fireworks = [];
+            let particles = [];
+            let trails = [];
+            let gameActive = false;
+            let mousedown = false;
+            let mouseX = 0, mouseY = 0;
+            let timerTick = 0;
+            let combo = 0;
+            let comboTimer = null;
+
+            // 唯一指定的文本
+            const THE_TEXT = "Ciallo～(∠・ω< )⌒☆";
+
+            function resize() {
+                w = canvas.width = window.innerWidth;
+                h = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', () => { if(gameActive) resize(); });
+            resize();
+
+            function random(min, max) { return Math.random() * (max - min) + min; }
+
+            // 增加 Combo
+            function addCombo() {
+                combo++;
+                comboNum.innerText = combo;
+                comboContainer.classList.remove('active');
+                void comboContainer.offsetWidth; 
+                comboContainer.classList.add('active');
+                
+                if (comboTimer) clearTimeout(comboTimer);
+                comboTimer = setTimeout(() => {
+                    combo = 0;
+                    comboContainer.classList.remove('active');
+                }, 2000);
+            }
+
+            // --- 粒子类 ---
+
+            class Firework {
+                constructor(sx, sy, tx, ty) {
+                    this.x = sx;
+                    this.y = sy;
+                    this.sx = sx;
+                    this.sy = sy;
+                    this.tx = tx;
+                    this.ty = ty;
+                    this.distanceToTarget = Math.sqrt(Math.pow(tx - sx, 2) + Math.pow(ty - sy, 2));
+                    this.angle = Math.atan2(ty - sy, tx - sx);
+                    this.speed = 2;
+                    this.acceleration = 1.05;
+                    this.hue = random(0, 360);
+                    this.brightness = random(50, 70);
+                    this.trail = [];
+                }
+
+                update(index) {
+                    this.trail.push([this.x, this.y]);
+                    if(this.trail.length > 5) this.trail.shift();
+
+                    if (this.speed < 15) this.speed *= this.acceleration;
+                    
+                    const vx = Math.cos(this.angle) * this.speed;
+                    const vy = Math.sin(this.angle) * this.speed;
+                    this.x += vx;
+                    this.y += vy;
+                    
+                    const dist = Math.sqrt(Math.pow(this.x - this.sx, 2) + Math.pow(this.y - this.sy, 2));
+
+                    if (dist >= this.distanceToTarget) {
+                        createExplosion(this.tx, this.ty, this.hue);
+                        fireworks.splice(index, 1);
+                        addCombo();
+                    }
+                }
+
+                draw() {
+                    ctx.beginPath();
+                    if (this.trail.length > 0) {
+                        ctx.moveTo(this.trail[0][0], this.trail[0][1]);
+                        for(let t of this.trail) ctx.lineTo(t[0], t[1]);
+                    } else ctx.moveTo(this.x, this.y);
+                    
+                    ctx.lineTo(this.x, this.y);
+                    ctx.strokeStyle = `hsl(${this.hue}, 100%, ${this.brightness}%)`;
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
+            }
+
+            class Particle {
+                constructor(x, y, hue, isText) {
+                    this.x = x;
+                    this.y = y;
+                    this.angle = random(0, Math.PI * 2);
+                    this.speed = random(2, 8); // 稍微降低速度，让文字看清楚
+                    this.friction = 0.94;
+                    this.gravity = 0.6;
+                    this.hue = random(hue - 30, hue + 30);
+                    this.alpha = 1;
+                    this.decay = random(0.01, 0.02); // 消失慢一点
+                    this.isText = isText;
+                    
+                    if(isText) {
+                        this.text = THE_TEXT; // 强制使用唯一指定字符串
+                        this.size = random(18, 28); // 字体大小
+                        this.rotation = random(-0.2, 0.2); // 轻微旋转，保持可读性
+                    } else {
+                        // 辅助的小碎片
+                        this.size = random(2, 4);
+                    }
+                }
+
+                update(index) {
+                    this.speed *= this.friction;
+                    this.x += Math.cos(this.angle) * this.speed;
+                    this.y += Math.sin(this.angle) * this.speed + this.gravity;
+                    this.alpha -= this.decay;
+                    if (this.alpha <= 0) particles.splice(index, 1);
+                }
+
+                draw() {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.globalAlpha = this.alpha;
+                    
+                    if(this.isText) {
+                        ctx.rotate(this.rotation); // 旋转只对文字生效
+                        ctx.font = `bold ${this.size}px Arial`;
+                        ctx.fillStyle = `hsl(${this.hue}, 100%, 75%)`;
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(this.text, 0, 0);
+                        // 添加一点发光让文字更清晰
+                        ctx.shadowColor = `hsl(${this.hue}, 100%, 50%)`;
+                        ctx.shadowBlur = 5;
+                    } else {
+                        ctx.fillStyle = `hsl(${this.hue}, 100%, 60%)`;
+                        ctx.beginPath();
+                        ctx.rect(0, 0, this.size, this.size);
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                }
+            }
+
+            class TrailDot {
+                constructor(x, y) {
+                    this.x = x;
+                    this.y = y;
+                    this.alpha = 1;
+                    this.decay = 0.08;
+                    this.hue = random(0, 360);
+                    this.size = random(2, 5);
+                }
+                update(index) {
+                    this.alpha -= this.decay;
+                    if(this.alpha <= 0) trails.splice(index, 1);
+                }
+                draw() {
+                    ctx.fillStyle = `hsla(${this.hue}, 100%, 80%, ${this.alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            function createExplosion(x, y, hue) {
+                // 主要的 Ciallo 文字
+                // 数量不能太多，因为字符串很长，太多会叠在一起看不清
+                for (let i = 0; i < 6; i++) {
+                    particles.push(new Particle(x, y, hue, true));
+                }
+                // 辅助的几何粒子，增加氛围感
+                for (let i = 0; i < 15; i++) {
+                    particles.push(new Particle(x, y, hue, false));
+                }
+            }
+
+            // --- 循环逻辑 ---
+
+            function loop() {
+                if (!gameActive) return;
+                requestAnimationFrame(loop);
+
+                // 透明拖尾
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; 
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.globalCompositeOperation = 'lighter'; 
+
+                // 长按连发
+                if (mousedown && timerTick % 6 === 0) {
+                    fireworks.push(new Firework(w/2, h, mouseX + random(-30,30), mouseY + random(-30,30)));
+                }
+
+                // 自动发射
+                timerTick++;
+                if (timerTick > 50 && !mousedown) {
+                    fireworks.push(new Firework(w/2, h, random(w*0.2, w*0.8), random(h*0.2, h*0.5)));
+                    timerTick = 0;
+                }
+
+                [fireworks, particles, trails].forEach(arr => {
+                    let i = arr.length;
+                    while(i--) {
+                        arr[i].draw();
+                        arr[i].update(i);
+                    }
+                });
+
+                if(particles.length > 400) particles.splice(0, particles.length - 400);
+            }
+
+            // --- 交互 ---
+
+            function startGame() {
+                resize();
+                gameActive = true;
+                homeScreen.style.opacity = '0';
+                homeScreen.style.pointerEvents = 'none';
+                controls.style.opacity = '1';
+                loop();
+            }
+
+            function stopGame() {
+                gameActive = false;
+                homeScreen.style.opacity = '1';
+                homeScreen.style.pointerEvents = 'auto';
+                controls.style.opacity = '0';
+                ctx.clearRect(0,0,w,h); 
+                fireworks = []; particles = []; trails = [];
+                combo = 0; comboNum.innerText = 0;
+            }
+
+            startBtn.addEventListener('click', startGame);
+            exitBtn.addEventListener('click', stopGame);
+            clearBtn.addEventListener('click', () => {
+                fireworks = []; particles = [];
+            });
+
+            function handleInput(x, y) {
+                mouseX = x; mouseY = y;
+                trails.push(new TrailDot(x, y));
+            }
+
+            canvas.addEventListener('mousedown', (e) => {
+                mousedown = true;
+                handleInput(e.clientX, e.clientY);
+                fireworks.push(new Firework(w/2, h, e.clientX, e.clientY));
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if(gameActive) handleInput(e.clientX, e.clientY);
+            });
+
+            canvas.addEventListener('mouseup', () => mousedown = false);
+
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                mousedown = true;
+                let t = e.touches[0];
+                handleInput(t.clientX, t.clientY);
+                fireworks.push(new Firework(w/2, h, t.clientX, t.clientY));
+            }, {passive: false});
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                let t = e.touches[0];
+                handleInput(t.clientX, t.clientY);
+            }, {passive: false});
+
+            canvas.addEventListener('touchend', () => mousedown = false);
+
+        })();
+    </script>
 </body>
 </html>
